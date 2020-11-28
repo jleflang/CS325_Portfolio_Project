@@ -1,2 +1,9 @@
-build-Sudoku_Solver-Desktop_Qt_5_15_1_GCC_64bit-Debug/
+game/
+
+.idea/.gitignore
+.idea/CS325_Portfolio_Project.iml
+.idea/inspectionProfiles/
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
 
