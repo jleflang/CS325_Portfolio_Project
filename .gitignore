@@ -7,3 +7,5 @@ game/
 .idea/modules.xml
 .idea/vcs.xml
 
+james_leflang_portfolio_proj.*
+!james_leflang_portfolio_proj.pdf
