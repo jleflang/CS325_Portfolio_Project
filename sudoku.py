@@ -12,6 +12,8 @@ import copy
 # (modifications are needed to match application):
 #  https://github.com/wyfok/Solve_Sudoku_with_Crook_algorithm
 # 
+# The verify_board() method is the primary graded objective for this assignment.
+#
 
 # Initialise the pygame font 
 pygame.font.init() 
@@ -158,9 +160,10 @@ def valid(m: list, i: int, j: int, cell: int) -> bool:
     return True
 
 
-# This is the core verification method
+# This is the core verification method. This method takes a solved board and 
+# determines if the solution is valid.
 def verify_board(board: list) -> bool:
-    """Verifies the board.
+    """Verifies the board in O(n^2) time complexity.
     Args:
         board (list): Current puzzle
     Returns:
