@@ -1,4 +1,5 @@
 game/
+*.zip
 
 .idea/.gitignore
 .idea/CS325_Portfolio_Project.iml
