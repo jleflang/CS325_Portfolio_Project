@@ -6,6 +6,8 @@ game/
 .idea/misc.xml
 .idea/modules.xml
 .idea/vcs.xml
+.vscode/
 
 james_leflang_portfolio_proj.*
+*.bib
 !james_leflang_portfolio_proj.pdf
