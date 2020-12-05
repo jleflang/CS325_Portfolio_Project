@@ -8,13 +8,14 @@ import copy
 # Used the following link to do the GUI since I am 100% unfamiliar to PyGame
 # https://geeksforgeeks.org/building-and-visualizing-sudoku-game-using-pygame/
 # Puzzle generated here: https://qqwing.com/generate.html
-# Some of the code mirrors this:
+# Some of the code mirrors/replicates this 
+# (modifications are needed to match application):
 #  https://github.com/wyfok/Solve_Sudoku_with_Crook_algorithm
 # 
 
-# initialise the pygame font 
+# Initialise the pygame font 
 pygame.font.init() 
-
+# Configure the window
 screen = pygame.display.set_mode((500, 600))  
 pygame.display.set_caption("SUDOKU GAME") 
   
@@ -67,8 +68,10 @@ def load_puzzle():
 # Highlight the cell selected 
 def draw_box(): 
     for i in range(2): 
-        pygame.draw.line(screen, (255, 0, 0), (x * dif-3, (y + i) * dif), (x * dif + dif + 3, (y + i)*dif), 7)
-        pygame.draw.line(screen, (255, 0, 0), ((x + i) * dif, y * dif), ((x + i) * dif, y * dif + dif), 7)
+        pygame.draw.line(screen, (255, 0, 0), (x * dif-3, (y + i) * dif),
+                         (x * dif + dif + 3, (y + i)*dif), 7)
+        pygame.draw.line(screen, (255, 0, 0), ((x + i) * dif, y * dif),
+                         ((x + i) * dif, y * dif + dif), 7)
 
 
 # Function to draw required lines for making Sudoku grid          
@@ -79,9 +82,11 @@ def draw():
             if grid[i][j] != 0:
   
                 # Fill blue color in already numbered grid 
-                pygame.draw.rect(screen, (0, 153, 153), pygame.Rect(i * dif, j * dif, dif + 1, dif + 1))
+                pygame.draw.rect(screen, (0, 153, 153),
+                                 pygame.Rect(i * dif, 
+                                 j * dif, dif + 1, dif + 1))
   
-                # Fill gird with default numbers specified 
+                # Fill grid with default numbers specified
                 text1 = font1.render(str(grid[i][j]), True, (0, 0, 0))
                 screen.blit(text1, (i * dif + 15, j * dif + 15))
 
@@ -96,7 +101,7 @@ def draw():
 
 
 # Fill value entered in cell       
-def draw_val(cell):
+def draw_val(cell: int):
     text1 = font1.render(str(cell), True, (0, 0, 0))
     screen.blit(text1, (x * dif + 15, y * dif + 15))     
 
@@ -113,7 +118,16 @@ def raise_error2():
 
 
 # Check if the value entered in board is valid 
-def valid(m, i, j, cell):
+def valid(m: list, i: int, j: int, cell: int) -> bool:
+    """Determine if a value is valid for a cell.
+    Args:
+        m (list): The board
+        i (int): Column number
+        j (int): Row number
+        cell: Value to verify
+    Returns:
+        bool: True if valid, else False
+    """
     for it in range(9): 
         if m[i][it] == cell:
             return False
@@ -130,52 +144,77 @@ def valid(m, i, j, cell):
     return True
 
 
-# Get rid of forced cells
-def forced_cells(sol: dict):
-    for k, v in sol.items():
-        if len(v) == 1:
-            # Fill the cell
-            cell = v.pop()
-            grid[k[0]][k[1]] = cell
-            global x, y
-            x = k[0]
-            y = k[1]
+# This is the core verification method
+def verify_board(board: list) -> bool:
+    """Verifies the board.
+    Args:
+        board (list): Current puzzle
+    Returns:
+        bool: True if valid, else false
+    """
+    
+    # Row/Column verification
+    for i in range(9):
+        row = [cell for cell in [board[col][i] for col in range(9)]]
+        col = board[i]
+        # Unique values must be there!
+        for val in range(1, 10):
+            if row.count(val) != 1:
+                return False
+            if col.count(val) != 1:
+                return False
 
-            # white color background\
-            screen.fill((255, 255, 255))
-            draw()
-            draw_box()
-            pygame.display.update()
-            pygame.time.delay(20)
+    # Box verification
+    for i in range(3):
+        for j in range(3):
+            box = list([board[col][row] for col in range(j * 3, j * 3 + 3)
+                            for row in range(i * 3, i * 3 + 3)])
 
-            # Remove value from the any in box/row/col
-            for i in range(9):
-                try:
-                    sol[k[0], i].remove(cell)
-                except ValueError:
-                    continue
+            for val in range(1, 10):
+                if box.count(val) != 1:
+                    return False
 
-            for i in range(9):
-                try:
-                    sol[i, k[1]].remove(cell)
-                except ValueError:
-                    continue
+    return True
 
-            it = k[0]//3
-            jt = k[1]//3
-            for i in range(it * 3, it * 3 + 3):
-                for j in range(jt * 3, jt * 3 + 3):
-                    try:
-                        sol[i, j].remove(val)
-                    except ValueError:
-                        continue
 
-        else:
-            continue
+
+# This method is a direct copy of lines 218-242 in
+# https://github.com/wyfok/Solve_Sudoku_with_Crook_algorithm/blob/master/function.py
+def do_box(sol: dict):
+    # For the range of boxes
+    for i in range(3):
+        for j in range(3):
+            # Get a set of the possible values for each cell relative to 
+            # each box they are in
+            possible = set([k for b in [value for key, value in sol.items() if
+                                        key[1] in range(i * 3, i * 3 + 3) and
+                                        key[0] in range(j * 3, j * 3 + 3) and
+                                        len(value) > 0]
+                            for k in b])
+
+            # For each of those cells
+            for cell in possible:
+                # Get a list of possible values
+                avail = [key for key, value in sol.items() if x in value if
+                         key[1] in range(i * 3, i * 3 + 3) and
+                         key[0] in range(j * 3, j * 3 + 3)]
+
+                # Set those values when they are actually available 
+                # relative to the box
+                if len(set([cell[0] for cell in avail])) == 1:
+                    for key in [key for key, value in sol.items()
+                                if key[0] == avail[0][0] and key not in avail]:
+                        sol[key] = [possi for possi in 
+                                    sol[key] if possi != cell]
+                if len(set([cell[1] for cell in avail])) == 1:
+                    for key in [key for key, value in sol.items()
+                                if key[1] == avail[0][1] and key not in avail]:
+                        sol[key] = [possi for possi in 
+                                    sol[key] if possi != cell]
 
 
 # Remove all the impossible values from the solution
-def remove_impossibles(sol, cur_possibles):
+def remove_impossibles(sol: dict, cur_possibles: dict, board: list):
     # Get the range of possible values
     try:
         min_pos = min((len(v)) for _, v in cur_possibles.items())
@@ -185,12 +224,14 @@ def remove_impossibles(sol, cur_possibles):
 
     # For each value in that range
     for i in reversed(range(min_pos, max_pos + 1)):
-
-        for k, v in {k: v for k, v in cur_possibles.items() if len(v) == i}.items():
+        # For each cell that matches that range
+        for k, v in {k: v for k, v in cur_possibles.items() if 
+                     len(v) == i}.items():
 
             subset_size = 0
             matched = set()
 
+            # Create the necessary subsets
             for k_1, v_1 in cur_possibles.items():
                 if len(v) < len(v_1):
                     continue
@@ -199,92 +240,218 @@ def remove_impossibles(sol, cur_possibles):
                         matched.add(k_1)
                         subset_size += 1
 
+                # When the subset is the same size of the possible values
                 if subset_size == len(v):
-                    for k_2, v_2 in {k: v for k, v in cur_possibles.items() if k not in matched}.items():
+                    for k_2, v_2 in {k: v for k, v in cur_possibles.items()
+                                     if k not in matched}.items():
                         cur_possibles[k_2] = [t for t in v_2 if t not in v]
-                        while True:
-                            old = copy.deepcopy(sol)
-                            forced_cells(sol)
-                            if old == sol:
-                                break
+                        do_check_render(sol, board)
 
 
 # Goes through a column
-def col_fill(sol: dict):
+def col_fill(sol: dict, board: list):
     for i in range(9):
         possibles = {k: v for k, v in sol.items() if k[0] == i and len(v) > 0}
-        remove_impossibles(sol, possibles)
+        remove_impossibles(sol, possibles, board)
 
 
 # Goes through a row
-def row_fill(sol: dict):
+def row_fill(sol: dict, board: list):
     for i in range(9):
         possibles = {k: v for k, v in sol.items() if k[1] == i and len(v) > 0}
-        remove_impossibles(sol, possibles)
+        remove_impossibles(sol, possibles, board)
 
 
 # Goes through a box
-def box_fill(sol: dict):
+def box_fill(sol: dict, board: list):
     for i in range(3):
         possible = {k: v for k, v in sol.items() if k[0] in
                     [g for g in range(i * 3, i * 3 + 3)] and k[1] in
                     [z for z in range(i * 3, i * 3 + 3)] and len(v) > 0}
-        remove_impossibles(sol, possible)
+        remove_impossibles(sol, possible, board)
 
 
 # Crook's algorithm
-def crooks(sol):
-    row_fill(sol)
-    col_fill(sol)
-    box_fill(sol)
+def crooks(sol: dict, board: list):
+    while True:
+        old = copy.deepcopy(board)
+        row_fill(sol, board)
+        col_fill(sol, board)
+        box_fill(sol, board)
+        if old == board:
+            break
+
+
+# Examine a column and fill uniques
+def column_examine(sol: dict, board: list):
+    for i in range(9):
+        # Get the column
+        existent = board[i]
+
+        # Update the possibilities
+        for j in range(9):
+            sol[j, i] = [k for k in sol[j, i] if k not in existent]
+
+        pos_cell = [k for q in [value for key, value in sol.items() if 
+                                key[1] == i and len(value) > 0] for k in q]
+        uniques = [k for k in pos_cell if pos_cell.count(k) == 1]
+        if len(uniques) > 0:
+            for k in uniques:
+                for key, value in {key: value for key, value in sol.items() if
+                                   key[1] == i and len(value) > 0}.items():
+                    if k in value:
+                        sol[key].clear()
+                        board[key[1]][key[0]] = k
+                        global x, y
+                        x = key[1]
+                        y = key[0]
+
+                        # white color background\
+                        screen.fill((255, 255, 255))
+                        draw()
+                        draw_box()
+                        pygame.display.update()
+                        pygame.time.delay(20)
+
+
+# Examine a row and fill uniques
+def row_examine(sol: dict, board: list):
+    for i in range(9):
+        existent = [cell for cell in [board[col][i] for col in range(9)]]
+
+        for j in range(9):
+            sol[i, j] = [k for k in sol[i, j] if k not in existent]
+
+        pos_cell = [k for q in [value for key, value in sol.items() if 
+                                key[0] == i and len(value) > 0] for k in q]
+        uniques = [k for k in pos_cell if pos_cell.count(k) == 1]
+        if len(uniques) > 0:
+            for k in uniques:
+                for key, value in {key: value for key, value in sol.items() if
+                                   key[0] == i and len(value) > 0}.items():
+                    if k in value:
+                        sol[key].clear()
+                        board[key[1]][key[0]] = k
+                        global x, y
+                        x = key[1]
+                        y = key[0]
+
+                        # white color background\
+                        screen.fill((255, 255, 255))
+                        draw()
+                        draw_box()
+                        pygame.display.update()
+                        pygame.time.delay(20)
+
+
+# Examine a box and fill uniques
+def box_examine(sol: dict, board: list):
+    for i in range(3):
+        for j in range(3):
+            existent = set([board[col][row] for col in range(j * 3, j * 3 + 3)
+                            for row in range(i * 3, i * 3 + 3)])
+
+            for q in range(j * 3, j * 3 + 3):
+                for r in range(i * 3, i * 3 + 3):
+                    sol[r, q] = [k for k in sol[r, q] if k not in existent]
+
+            pos_cell = [k for q in [value for key, value in sol.items() if
+                                    key[1] in range(j * 3, j * 3 + 3) and
+                                    key[0] in range(i * 3, i * 3 + 3) and
+                                    len(value) > 0] for k in q]
+            uniques = [k for k in pos_cell if pos_cell.count(k) == 1]
+            if len(uniques) > 0:
+                for k in uniques:
+                    box = {key: value for key, value in sol.items() if
+                           key[1] in range(j * 3, j * 3 + 3) and
+                           key[0] in range(i * 3, i * 3 + 3) and
+                           len(value) > 0}
+                    for key, value in box.items():
+                        if k in value:
+                            sol[key].clear()
+                            board[key[1]][key[0]] = k
+                            global x, y
+                            x = key[1]
+                            y = key[0]
+
+                            # white color background\
+                            screen.fill((255, 255, 255))
+                            draw()
+                            draw_box()
+                            pygame.display.update()
+                            pygame.time.delay(20)
+
+
+# Examine any uniques and fill them
+def unique_examine(sol: dict, board: list):
+    for k, v in sol.items():
+        if len(v) == 1:
+            value = v[0]
+            v.clear()
+            board[k[1]][k[0]] = value
+            global x, y
+            x = k[1]
+            y = k[0]
+
+            # white color background\
+            screen.fill((255, 255, 255))
+            draw()
+            draw_box()
+            pygame.display.update()
+            pygame.time.delay(20)
+
+
+def do_check_render(sol: dict, board: list):
+    while True:
+        old = copy.deepcopy(board)
+        column_examine(sol, board)
+        row_examine(sol, board)
+        box_examine(sol, board)
+        unique_examine(sol, board)
+        if old == board:
+            break
 
 
 # Solves the sudoku board using J. F. Crook's Pencil-and-Paper Algorithm
 # http://www.ams.org/notices/200904/tx090400460p.pdf
-def solve(board):
+def solve(board: list) -> bool:
     sol = {}
 
     pygame.event.pump()
 
-    # Make the solution scratchpad and Mark up every cell
+    # Make the solution scratchpad
     for i in range(9):
         for j in range(9):
-            sol[i, j] = list()
-            if board[i][j] == 0:
-                for it in range(1, 10):
-                    if valid(board, i, j, it):
-                        sol[i, j].append(it)
-                    else:
-                        continue
-            else:
-                continue
-
-    # Go through and rid of uniques (forced cells)
-    forced_cells(sol)
+            sol[i, j] = list(range(1, 10))
+            if board[i][j] != 0:
+                sol[i, j] = []
 
     # Run the algorithm until we can't (no change)
     while True:
-        old = copy.deepcopy(sol)
-        crooks(sol)
-        if old == sol:
+        old = copy.deepcopy(board)
+        # Basic check and render
+        do_check_render(sol, board)
+        # Perform Crook's
+        crooks(sol, board)
+        # Deal with boxes
+        do_box(sol)
+        if old == board:
             break
 
     del old
 
     # Check for completeness
     # If the puzzle was not solved, return false
-    for j, row in enumerate(board):
-        for i, cell in enumerate(row):
-            if not valid(board, i, j, cell):
-                return False
-
-    return True
+    return verify_board(board)
 
 
 # Display instruction for the game 
 def instruction(): 
-    text1 = font2.render("PRESS D TO RESET TO DEFAULT / R TO EMPTY", True, (0, 0, 0))
-    text2 = font2.render("ENTER VALUES AND PRESS ENTER TO VISUALIZE", True, (0, 0, 0))
+    text1 = font2.render(
+                         "PRESS D TO RESET / R TO EMPTY / E TO VERIFY", 
+                         True, (0, 0, 0))
+    text2 = font2.render("ENTER VALUES AND PRESS ENTER TO SOLVE", 
+                         True, (0, 0, 0))
     screen.blit(text1, (20, 520))         
     screen.blit(text2, (20, 540)) 
 
@@ -296,11 +463,18 @@ def result():
 
 
 # FLAGS
+# Run
 run = True
-flag1 = 0
-flag2 = 0
-rs = 0
-error = 0
+# Render event
+render_event = False
+# Solve Event
+solve_puz = False
+# Result
+is_solved = False
+# Error
+error = False
+# Verification
+verific = False
 
 # GAME ACTIVE LOOP
 while run: 
@@ -318,23 +492,23 @@ while run:
             run = False  
         # Get the mouse position to insert number
         if event.type == pygame.MOUSEBUTTONDOWN: 
-            flag1 = 1
+            render_event = True
             pos = pygame.mouse.get_pos() 
             get_cord(pos) 
         # Get the number to be inserted if key pressed     
         if event.type == pygame.KEYDOWN: 
             if event.key == pygame.K_LEFT: 
                 x -= 1
-                flag1 = 1
+                render_event = True
             if event.key == pygame.K_RIGHT: 
                 x += 1
-                flag1 = 1
+                render_event = True
             if event.key == pygame.K_UP: 
                 y -= 1
-                flag1 = 1
+                render_event = True
             if event.key == pygame.K_DOWN: 
                 y += 1
-                flag1 = 1    
+                render_event = True    
             if event.key == pygame.K_1: 
                 val = 1
             if event.key == pygame.K_2: 
@@ -354,12 +528,12 @@ while run:
             if event.key == pygame.K_9: 
                 val = 9  
             if event.key == pygame.K_RETURN: 
-                flag2 = 1   
+                solve_puz = True   
             # If R pressed, clear the sudoku board 
             if event.key == pygame.K_r: 
-                rs = 0
-                error = 0
-                flag2 = 0
+                is_solved = False
+                error = False
+                solve_puz = False
                 grid = [
                     [0, 0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -373,38 +547,44 @@ while run:
                 ] 
             # If D is pressed, reset the board  
             if event.key == pygame.K_d: 
-                rs = 0
-                error = 0
-                flag2 = 0
-                load_puzzle() 
+                is_solved = False
+                error = False
+                solve_puz = False
+                load_puzzle()
+            # If E is pressed, verify the user input
+            if event.key == pygame.K_e:
+                verific = True 
 
-    if flag2 == 1: 
-        if solve(grid):
-            error = 1
+    if solve_puz: 
+        if not solve(grid):
+            error = True
         else: 
-            rs = 1
-        flag2 = 0    
+            is_solved = True
+        solve_puz = False    
     if val != 0:             
         draw_val(val) 
         # print(x) 
         # print(y) 
         if valid(grid, int(x), int(y), val):
             grid[int(x)][int(y)] = val
-            flag1 = 0
+            render_event = False
         else: 
             grid[int(x)][int(y)] = 0
             raise_error2()    
         val = 0    
-        
-    if error == 1: 
+
+    if verific:
+        is_solved = verify_board(grid)
+
+    if error: 
         raise_error1() 
 
-    if rs == 1: 
+    if is_solved: 
         result() 
 
     draw()
 
-    if flag1 == 1: 
+    if render_event: 
         draw_box()
 
     instruction()     
