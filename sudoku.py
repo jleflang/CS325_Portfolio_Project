@@ -41,7 +41,11 @@ font1 = pygame.font.SysFont("comicsans", 40)
 font2 = pygame.font.SysFont("comicsans", 20)
 
 
-def get_cord(idx):
+def get_cord(idx: list):
+    """Gets the cell location.
+    Args:
+        idx (list): cell coordinates
+    """
     global x 
     x = idx[0]//dif
     global y 
@@ -52,6 +56,7 @@ def get_cord(idx):
 # If you want to replace the file provided, generate one on QQWing with
 # The "Compact" setting to be in the correct format
 def load_puzzle():
+    """Loads a puzzle from file."""
     try:
         with open('puzzle.txt', 'r') as puzzle:
             rows = puzzle.readlines()
@@ -66,7 +71,8 @@ def load_puzzle():
 
   
 # Highlight the cell selected 
-def draw_box(): 
+def draw_box():
+    """Highlights a cell.""" 
     for i in range(2): 
         pygame.draw.line(screen, (255, 0, 0), (x * dif-3, (y + i) * dif),
                          (x * dif + dif + 3, (y + i)*dif), 7)
@@ -75,10 +81,11 @@ def draw_box():
 
 
 # Function to draw required lines for making Sudoku grid          
-def draw(): 
-    # Draw the lines     
+def draw():
+    """Draws the Sudoku board."""      
     for i in range(9):
         for j in range(9):
+            # If the cell is not empty
             if grid[i][j] != 0:
   
                 # Fill blue color in already numbered grid 
@@ -102,17 +109,24 @@ def draw():
 
 # Fill value entered in cell       
 def draw_val(cell: int):
+    """Draws the cell's value.
+    Args:
+        cell (int): Value to draw
+    """
     text1 = font1.render(str(cell), True, (0, 0, 0))
     screen.blit(text1, (x * dif + 15, y * dif + 15))     
 
 
 # Raise error when wrong value entered 
-def raise_error1(): 
+def error_puzzle_incomplete():
+    """Error: Puzzle state is Incomplete.""" 
     text1 = font1.render("WRONG !!!", True, (0, 0, 0))
     screen.blit(text1, (20, 570))
 
 
-def raise_error2(): 
+# Raise error when wrong key is pressed
+def error_unk_key():
+    """Error: Key not recognized.""" 
     text1 = font1.render("Wrong !!! Not a valid Key", True, (0, 0, 0))
     screen.blit(text1, (20, 570))   
 
@@ -181,6 +195,10 @@ def verify_board(board: list) -> bool:
 # This method is a direct copy of lines 218-242 in
 # https://github.com/wyfok/Solve_Sudoku_with_Crook_algorithm/blob/master/function.py
 def do_box(sol: dict):
+    """Checks a box for the possible values.
+    Args:
+        sol (dict): The solutions scratchpad
+    """
     # For the range of boxes
     for i in range(3):
         for j in range(3):
@@ -215,6 +233,12 @@ def do_box(sol: dict):
 
 # Remove all the impossible values from the solution
 def remove_impossibles(sol: dict, cur_possibles: dict, board: list):
+    """Core part of Crook's Algorithm.
+    Args:
+        sol (dict): The solution scratchpad
+        cur_possibles (dict): Values to attempt to fill
+        board (list): Current board
+    """
     # Get the range of possible values
     try:
         min_pos = min((len(v)) for _, v in cur_possibles.items())
@@ -250,6 +274,11 @@ def remove_impossibles(sol: dict, cur_possibles: dict, board: list):
 
 # Goes through a column
 def col_fill(sol: dict, board: list):
+    """Perform Crook's on the columns.
+    Args:
+        sol (dict): The solution scratchpad
+        board (list): Current board
+    """
     for i in range(9):
         possibles = {k: v for k, v in sol.items() if k[0] == i and len(v) > 0}
         remove_impossibles(sol, possibles, board)
@@ -257,6 +286,11 @@ def col_fill(sol: dict, board: list):
 
 # Goes through a row
 def row_fill(sol: dict, board: list):
+    """Perform Crook's on the rows.
+    Args:
+        sol (dict): The solution scratchpad
+        board (list): Current board
+    """
     for i in range(9):
         possibles = {k: v for k, v in sol.items() if k[1] == i and len(v) > 0}
         remove_impossibles(sol, possibles, board)
@@ -264,6 +298,11 @@ def row_fill(sol: dict, board: list):
 
 # Goes through a box
 def box_fill(sol: dict, board: list):
+    """Perform Crook's on the boxes.
+    Args:
+        sol (dict): The solution scratchpad
+        board (list): Current board
+    """
     for i in range(3):
         possible = {k: v for k, v in sol.items() if k[0] in
                     [g for g in range(i * 3, i * 3 + 3)] and k[1] in
@@ -273,6 +312,11 @@ def box_fill(sol: dict, board: list):
 
 # Crook's algorithm
 def crooks(sol: dict, board: list):
+    """Top level Crook's.
+    Args:
+        sol (dict): The solution scratchpad
+        board (list): Current board
+    """
     while True:
         old = copy.deepcopy(board)
         row_fill(sol, board)
@@ -284,6 +328,11 @@ def crooks(sol: dict, board: list):
 
 # Examine a column and fill uniques
 def column_examine(sol: dict, board: list):
+    """Perform basic check & fill on the column.
+    Args:
+        sol (dict): The solution scratchpad
+        board (list): Current board
+    """
     for i in range(9):
         # Get the column
         existent = board[i]
@@ -316,6 +365,11 @@ def column_examine(sol: dict, board: list):
 
 # Examine a row and fill uniques
 def row_examine(sol: dict, board: list):
+    """Perform basic check & fill on the row.
+    Args:
+        sol (dict): The solution scratchpad
+        board (list): Current board
+    """
     for i in range(9):
         existent = [cell for cell in [board[col][i] for col in range(9)]]
 
@@ -346,6 +400,11 @@ def row_examine(sol: dict, board: list):
 
 # Examine a box and fill uniques
 def box_examine(sol: dict, board: list):
+    """Perform basic check & fill on the box.
+    Args:
+        sol (dict): The solution scratchpad
+        board (list): Current board
+    """
     for i in range(3):
         for j in range(3):
             existent = set([board[col][row] for col in range(j * 3, j * 3 + 3)
@@ -384,6 +443,11 @@ def box_examine(sol: dict, board: list):
 
 # Examine any uniques and fill them
 def unique_examine(sol: dict, board: list):
+    """Perform basic check & fill for unique values.
+    Args:
+        sol (dict): The solution scratchpad
+        board (list): Current board
+    """
     for k, v in sol.items():
         if len(v) == 1:
             value = v[0]
@@ -402,6 +466,11 @@ def unique_examine(sol: dict, board: list):
 
 
 def do_check_render(sol: dict, board: list):
+    """Top level basic check & fill.
+    Args:
+        sol (dict): The solution scratchpad
+        board (list): Current board
+    """
     while True:
         old = copy.deepcopy(board)
         column_examine(sol, board)
@@ -415,6 +484,12 @@ def do_check_render(sol: dict, board: list):
 # Solves the sudoku board using J. F. Crook's Pencil-and-Paper Algorithm
 # http://www.ams.org/notices/200904/tx090400460p.pdf
 def solve(board: list) -> bool:
+    """Solve a puzzle with Crook's Algorithm.
+    Args:
+        board (list): Current Board
+    Returns:
+        bool: True if solved, else False
+    """
     sol = {}
 
     pygame.event.pump()
@@ -446,7 +521,8 @@ def solve(board: list) -> bool:
 
 
 # Display instruction for the game 
-def instruction(): 
+def instruction():
+    """Draw instructions.""" 
     text1 = font2.render(
                          "PRESS D TO RESET / R TO EMPTY / E TO VERIFY", 
                          True, (0, 0, 0))
@@ -457,7 +533,8 @@ def instruction():
 
 
 # Display options when solved 
-def result(): 
+def result():
+    """Draw ending message.""" 
     text1 = font1.render("FINISHED PRESS R or D", True, (0, 0, 0))
     screen.blit(text1, (20, 570))
 
@@ -570,14 +647,14 @@ while run:
             render_event = False
         else: 
             grid[int(x)][int(y)] = 0
-            raise_error2()    
+            error_unk_key()    
         val = 0    
 
     if verific:
         is_solved = verify_board(grid)
 
     if error: 
-        raise_error1() 
+        error_puzzle_incomplete() 
 
     if is_solved: 
         result() 
